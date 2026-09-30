@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = ["ui-linux"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+# Dependencies compiled with optimisation even in debug builds.
+#
+# Our own crate stays unoptimised, so rebuilds are still seconds and the
+# debugger still works. But wgpu, naga (shader compilation) and cosmic-text
+# (font scanning and shaping) do heavy work at startup, and unoptimised they
+# are 10-50x slower - which is the whole of a slow `cargo run` window.
+#
+# One-off cost: the next build recompiles every dependency.
+[profile.dev.package."*"]
+opt-level = 3
