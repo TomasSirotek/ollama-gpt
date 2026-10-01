@@ -82,6 +82,39 @@ pub const CHEVRON_UP: &str = concat!(
     r#"<path d="m6 15 6-6 6 6"/></svg>"#
 );
 
+/// Hamburger - opens the rail when it is hidden at narrow widths.
+pub const MENU: &str = concat!(
+    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">"#,
+    r#"<path d="M4 7h16M4 12h16M4 17h16"/></svg>"#
+);
+
+/// Speech bubble - the chat list.
+pub const CHAT: &str = concat!(
+    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">"#,
+    r#"<path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.8-5.1A7.5 7.5 0 1 1 21 11.5Z"/></svg>"#
+);
+
+/// Framed picture - the image suggestion.
+pub const IMAGE: &str = concat!(
+    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">"#,
+    r#"<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/>"#,
+    r#"<path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg>"#
+);
+
+/// Globe - the web-search suggestion.
+pub const GLOBE: &str = concat!(
+    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">"#,
+    r#"<circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/>"#,
+    r#"<path d="M12 3.4a13 13 0 0 1 0 17.2 13 13 0 0 1 0-17.2Z"/></svg>"#
+);
+
+/// Microphone - voice input in the composer.
+pub const MIC: &str = concat!(
+    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">"#,
+    r#"<rect x="9" y="3" width="6" height="11" rx="3"/>"#,
+    r#"<path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3"/></svg>"#
+);
+
 /// Renders one of the constants above at `size`, tinted with `color`.
 pub fn icon<'a>(source: &'static str, size: f32, color: Color) -> Svg<'a> {
     svg(svg::Handle::from_memory(source.as_bytes()))

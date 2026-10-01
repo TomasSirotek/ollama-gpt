@@ -8,8 +8,12 @@ use iced::{Border, Color};
 
 /// The chat surface. Pure black, so the composer reads as the only object on it.
 pub const BG_MAIN: Color = rgb(0x00, 0x00, 0x00);
-/// The rail, one step off black so the edge is felt rather than seen.
-pub const BG_SIDEBAR: Color = rgb(0x0d, 0x0d, 0x0d);
+/// The rail. Black, same as the chat - the two are separated by a hairline
+/// rather than by a step in value.
+pub const BG_SIDEBAR: Color = rgb(0x00, 0x00, 0x00);
+/// The hairline between rail and chat. Light enough to read as an edge on
+/// black, dim enough not to become a feature.
+pub const BORDER_RAIL: Color = rgb(0x3a, 0x3a, 0x3a);
 /// Selected nav row, hover, the avatar disc - anything lifting off the rail.
 pub const BG_RAISED: Color = rgb(0x21, 0x21, 0x21);
 /// The composer pill.

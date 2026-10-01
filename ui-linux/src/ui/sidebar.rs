@@ -1,18 +1,90 @@
 //! The rail: brand, navigation, profile and its menu.
+//!
+//! Two widths. Expanded is 262px with labels; collapsed is a 56px strip of
+//! icons. The collapsed strip drops the labels and the menu rather than
+//! shrinking them, because a 56px column has no room for either.
 
 use iced::widget::{Space, button, column, container, row, stack, text};
 use iced::{Alignment, Background, Color, Element, Length};
 
 use crate::app::{App, Message, Nav};
 use crate::theme::{
-    BG_MENU, BG_RAISED, BG_SIDEBAR, BORDER_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-    rounded,
+    BG_MENU, BG_RAISED, BG_SIDEBAR, BORDER_RAIL, BORDER_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY,
+    TEXT_TERTIARY, rounded,
 };
 use crate::ui::icon_button;
 use crate::ui::icons::{self, icon};
 
+/// Width of the collapsed strip.
+const RAIL: f32 = 56.0;
+const WIDE: f32 = 262.0;
+
+/// The rail as an overlay, for windows too narrow to hold it inline. Same
+/// contents as the expanded rail, plus a close control and a dimmed backdrop
+/// that dismisses on click.
+pub fn drawer(app: &App) -> Element<'_, Message> {
+    let backdrop = button(Space::new().width(Length::Fill).height(Length::Fill))
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .on_press(Message::ToggleDrawer)
+        .style(|_, _| button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.5,
+                ..Color::BLACK
+            })),
+            ..Default::default()
+        });
+
+    let panel = container(
+        column![
+            row![
+                text("OllamaGPT").size(16).color(TEXT_PRIMARY),
+                Space::new().width(Length::Fill),
+                icon_button(icons::SEARCH, Message::Search),
+                icon_button(icons::CLOSE, Message::ToggleDrawer),
+            ]
+            .spacing(2)
+            .padding([4, 8])
+            .align_y(Alignment::Center),
+            nav(app),
+            Space::new().height(Length::Fill),
+            profile(app),
+        ]
+        .spacing(10),
+    )
+    .width(Length::Fixed(252.0))
+    .height(Length::Fill)
+    .padding(6)
+    .style(|_| container::Style {
+        background: Some(Background::Color(BG_SIDEBAR)),
+        ..Default::default()
+    });
+
+    // The panel is pinned left; the backdrop fills everything behind it.
+    stack![backdrop, row![panel, Space::new().width(Length::Fill)]].into()
+}
+
 pub fn view(app: &App) -> Element<'_, Message> {
-    container(
+    let collapsed = app.sidebar_collapsed;
+
+    let content = if collapsed {
+        // Every child is the same 31px square (19px icon + 6px padding), so a
+        // single spacing value produces even gaps. The avatar is wrapped in a
+        // same-height box for the same reason - a bare 28px disc would sit on a
+        // different rhythm from the buttons above it.
+        column![
+            icon_button(icons::PANEL, Message::ToggleSidebar),
+            icon_button(icons::PEN, Message::Navigate(0)),
+            icon_button(icons::SEARCH, Message::Search),
+            icon_button(icons::CHAT, Message::Navigate(1)),
+            Space::new().height(Length::Fill),
+            container(avatar())
+                .width(Length::Fill)
+                .align_x(Alignment::Center),
+        ]
+        .spacing(8)
+        .align_x(Alignment::Center)
+    } else {
         column![
             header(),
             nav(app),
@@ -21,16 +93,35 @@ pub fn view(app: &App) -> Element<'_, Message> {
             Space::new().height(Length::Fill),
             profile(app),
         ]
-        .spacing(10),
-    )
-    .width(Length::Fixed(262.0))
-    .height(Length::Fill)
-    .padding(6)
-    .style(|_| container::Style {
-        background: Some(Background::Color(BG_SIDEBAR)),
-        ..Default::default()
-    })
-    .into()
+        .spacing(10)
+    };
+
+    let width = if collapsed { RAIL } else { WIDE };
+
+    let surface = container(content)
+        .width(Length::Fixed(width))
+        .height(Length::Fill)
+        .padding(6)
+        .style(|_| container::Style {
+            background: Some(Background::Color(BG_SIDEBAR)),
+            ..Default::default()
+        });
+
+    // A 1px column rather than a Border: borders apply to all four sides, and
+    // only the edge against the chat should be visible.
+    row![surface, divider()].into()
+}
+
+/// The hairline separating rail from chat.
+fn divider<'a>() -> Element<'a, Message> {
+    container(Space::new())
+        .width(Length::Fixed(1.0))
+        .height(Length::Fill)
+        .style(|_| container::Style {
+            background: Some(Background::Color(BORDER_RAIL)),
+            ..Default::default()
+        })
+        .into()
 }
 
 fn header<'a>() -> Element<'a, Message> {
@@ -84,24 +175,33 @@ fn nav(app: &App) -> Element<'_, Message> {
     rows.into()
 }
 
-/// The avatar row, with its menu stacked above it when open.
+/// The 28px disc. `align_x`/`align_y` rather than `center_x`/`center_y`:
+/// `center_x(length)` SETS the width, so passing `Fill` to centre the glyph
+/// stretched the disc to the full height of the rail.
+fn avatar<'a>() -> Element<'a, Message> {
+    container(icon(icons::USER, 16.0, TEXT_SECONDARY))
+        .width(Length::Fixed(28.0))
+        .height(Length::Fixed(28.0))
+        .align_x(Alignment::Center)
+        .align_y(Alignment::Center)
+        .style(|_| container::Style {
+            background: Some(Background::Color(BG_RAISED)),
+            border: rounded(14.0),
+            ..Default::default()
+        })
+        .into()
+}
+
+/// The avatar row, with its menu above it when open.
 ///
-/// `stack!` draws later children over earlier ones in the same space. The menu
-/// is therefore laid out on top of the row rather than pushing it, which is
-/// what makes it behave like a popover without needing a real overlay.
+/// A plain column, not `stack!`. Stacking drew the menu *over* the row and hid
+/// it - and there is nothing to gain from overlaying here: the rail already has
+/// a `Fill` spacer above this, so a taller profile block just eats some of that
+/// slack and pushes itself up. No overlay, nothing covered.
 fn profile(app: &App) -> Element<'_, Message> {
     let row_button = button(
         row![
-            container(icon(icons::USER, 16.0, TEXT_SECONDARY))
-                .width(Length::Fixed(28.0))
-                .height(Length::Fixed(28.0))
-                .center_x(Length::Fill)
-                .center_y(Length::Fill)
-                .style(|_| container::Style {
-                    background: Some(Background::Color(BG_RAISED)),
-                    border: rounded(14.0),
-                    ..Default::default()
-                }),
+            avatar(),
             column![
                 text("Developer nil").size(13).color(TEXT_PRIMARY),
                 text("Free").size(11).color(TEXT_TERTIARY),
@@ -149,13 +249,7 @@ fn profile(app: &App) -> Element<'_, Message> {
         ..Default::default()
     });
 
-    // The spacer reserves the avatar row's height so the menu sits directly
-    // above it rather than over it.
-    stack![
-        row_button,
-        column![menu, Space::new().height(Length::Fixed(46.0)),],
-    ]
-    .into()
+    column![menu, row_button].spacing(6).into()
 }
 
 fn menu_item<'a>(source: &'static str, label: &'a str, on_press: Message) -> Element<'a, Message> {

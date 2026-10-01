@@ -46,6 +46,13 @@ pub struct App {
     pub menu_open: bool,
     /// The settings sheet over the whole window.
     pub settings_open: bool,
+    /// Rail collapsed to an icon strip. Separate from the narrow-window case,
+    /// which hides the rail entirely without touching this.
+    pub sidebar_collapsed: bool,
+    /// Narrow windows have no room for a rail, so it arrives as an overlay
+    /// drawer instead. Separate from `sidebar_collapsed`: they are different
+    /// controls answering different questions.
+    pub drawer_open: bool,
 }
 
 impl Default for App {
@@ -56,6 +63,8 @@ impl Default for App {
             input: String::new(),
             menu_open: false,
             settings_open: false,
+            sidebar_collapsed: false,
+            drawer_open: false,
         }
     }
 }
@@ -69,6 +78,7 @@ pub enum Message {
     Navigate(usize),
     Search,
     ToggleSidebar,
+    ToggleDrawer,
     Attach,
     ToggleThinking,
     ToggleMenu,
@@ -92,11 +102,20 @@ pub fn update(app: &mut App, message: Message) -> Task<Message> {
         }
         Message::Navigate(index) => {
             app.nav = Nav::ALL[index];
+            // Picking a destination is the end of the drawer's job.
+            app.drawer_open = false;
             if app.nav == Nav::NewChat {
                 app.messages.clear();
             }
         }
         Message::ToggleMenu => app.menu_open = !app.menu_open,
+        Message::ToggleDrawer => app.drawer_open = !app.drawer_open,
+        Message::ToggleSidebar => {
+            app.sidebar_collapsed = !app.sidebar_collapsed;
+            // A menu anchored to a row that is about to be 56px wide has
+            // nowhere to go.
+            app.menu_open = false;
+        }
         Message::OpenSettings => {
             // Closing the menu as the sheet opens: leaving it behind the
             // backdrop means it is still there when the sheet closes.
@@ -106,11 +125,7 @@ pub fn update(app: &mut App, message: Message) -> Task<Message> {
         Message::CloseSettings => app.settings_open = false,
         // Not wired yet. Listed rather than caught by `_` so adding behaviour
         // later means deleting a name from here, not hunting for a wildcard.
-        Message::Search
-        | Message::ToggleSidebar
-        | Message::Attach
-        | Message::ToggleThinking
-        | Message::LogOut => {}
+        Message::Search | Message::Attach | Message::ToggleThinking | Message::LogOut => {}
     }
     Task::none()
 }
